@@ -11,52 +11,63 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+
       - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            python3-pip \
-            build-essential \
-            git \
-            python3 \
-            python3-dev \
-            ffmpeg \
-            libffi-dev \
-            libssl-dev \
-            autoconf \
-            libtool \
-            pkg-config \
-            zlib1g-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libtinfo5 \
-            cmake \
-            openjdk-17-jdk \
-            zip \
-            unzip
+            python3-pip build-essential git python3 python3-dev \
+            ffmpeg libffi-dev libssl-dev autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake openjdk-17-jdk zip unzip
 
       - name: Install Buildozer & Cython
         run: |
-          pip3 install --upgrade pip
-          pip3 install buildozer cython==0.29.33
+          # Install the specific Cython version required by Kivy
+          pip3 install cython==0.29.33
+          # Install Buildozer directly from GitHub (Fixes SDK issues)
+          pip3 install https://github.com/kivy/buildozer/archive/master.zip
 
-      - name: Initialize Buildozer (If missing)
+      - name: Create Buildozer Config
         run: |
-          if [ ! -f buildozer.spec ]; then
-            buildozer init
-            # Auto-configure the spec file for your app requirements
-            sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd,yt-dlp,ffmpeg,openssl/g' buildozer.spec
-            sed -i 's/android.permissions = INTERNET/android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE/g' buildozer.spec
-            sed -i 's/android.api = 27/android.api = 33/g' buildozer.spec
-          fi
+          # We write the spec file manually to avoid configuration errors
+          cat <<EOF > buildozer.spec
+          [app]
+          title = SpotifyDownloader
+          package.name = spotify2mp3
+          package.domain = org.test
+          source.dir = .
+          source.include_exts = py,png,jpg,kv,atlas
+          version = 1.0
+          
+          # CRITICAL: These are your libraries
+          requirements = python3,kivy==2.2.1,kivymd,yt-dlp,ffmpeg,openssl,requests
+          
+          # Android specific
+          orientation = portrait
+          fullscreen = 0
+          android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
+          android.api = 33
+          android.minapi = 21
+          android.archs = arm64-v8a
+          android.allow_backup = True
+          
+          [buildozer]
+          log_level = 2
+          warn_on_root = 1
+          EOF
 
       - name: Build APK
         run: |
-          # "yes" automatically accepts the Android SDK license agreement
           yes | buildozer android debug
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4  # Fixed: Updated from v2 to v4
+        uses: actions/upload-artifact@v4
         with:
-          name: my-app-apk
+          name: music-app-apk
           path: bin/*.apk
