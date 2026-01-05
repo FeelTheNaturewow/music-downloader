@@ -17,24 +17,25 @@ jobs:
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
 
-      - name: Install System Dependencies
+      - name: Install System Dependencies (The Nuclear List)
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             python3-pip build-essential git python3 python3-dev \
             ffmpeg libffi-dev libssl-dev autoconf libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
-            cmake openjdk-17-jdk zip unzip libltdl-dev
+            cmake openjdk-17-jdk zip unzip \
+            autopoint automake gettext  # <--- THESE ARE THE MISSING FIXES
 
       - name: Install Buildozer & Cython
         run: |
           pip3 install --upgrade pip
+          # Kivy 2.2.1 requires exactly this version of Cython
           pip3 install cython==0.29.33
           pip3 install https://github.com/kivy/buildozer/archive/master.zip
 
       - name: Create Buildozer Config
         run: |
-          # Create a clean buildozer.spec with license acceptance enabled
           cat <<EOF > buildozer.spec
           [app]
           title = SpotifyDownloader
@@ -47,7 +48,7 @@ jobs:
           # Requirements
           requirements = python3,kivy==2.2.1,kivymd,yt-dlp,ffmpeg,openssl,requests
           
-          # Android Configuration
+          # Android Config
           orientation = portrait
           fullscreen = 0
           android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
@@ -56,7 +57,7 @@ jobs:
           android.archs = arm64-v8a
           android.allow_backup = True
           
-          # CRITICAL: Auto-accept licenses to prevent "Broken Pipe"
+          # Fix for "Broken Pipe" and License errors
           android.accept_sdk_license = True
           
           [buildozer]
@@ -66,7 +67,6 @@ jobs:
 
       - name: Build APK
         run: |
-          # Removed "yes |" because we handle licenses in the spec file now
           buildozer android debug
 
       - name: Upload APK
