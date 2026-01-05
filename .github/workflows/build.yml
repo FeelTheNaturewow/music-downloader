@@ -12,7 +12,6 @@ jobs:
 
       - name: Create Buildozer Spec (Config)
         run: |
-          # We generate the config file here to ensure it is correct
           cat <<EOF > buildozer.spec
           [app]
           title = SpotifyDownloader
@@ -22,7 +21,7 @@ jobs:
           source.include_exts = py,png,jpg,kv,atlas
           version = 1.0
           
-          # Added 'pillow' which is required for KivyMD but often missed
+          # Requirements (Removed ffmpeg to prevent compile errors)
           requirements = python3,kivy==2.2.1,kivymd,yt-dlp,openssl,requests,pillow
           
           orientation = portrait
@@ -40,11 +39,13 @@ jobs:
           EOF
 
       - name: Build with Docker
-        # We use the official Kivy Buildozer Docker image
         uses: docker://kivy/buildozer:latest
         with:
           entrypoint: buildozer
           args: android debug
+        env:
+          # THIS IS THE FIX:
+          BUILDOZER_WARN_ON_ROOT: 0
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
