@@ -1,41 +1,18 @@
-name: Build Android APK
+name: Docker Build
 on:
   push:
     branches: [ main, master ]
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
-
+  build-android:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Free Disk Space
+      - name: Create Buildozer Spec (Config)
         run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-
-      - name: Install System Dependencies (The Nuclear List)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-pip build-essential git python3 python3-dev \
-            ffmpeg libffi-dev libssl-dev autoconf libtool pkg-config \
-            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
-            cmake openjdk-17-jdk zip unzip \
-            autopoint automake gettext  # <--- THESE ARE THE MISSING FIXES
-
-      - name: Install Buildozer & Cython
-        run: |
-          pip3 install --upgrade pip
-          # Kivy 2.2.1 requires exactly this version of Cython
-          pip3 install cython==0.29.33
-          pip3 install https://github.com/kivy/buildozer/archive/master.zip
-
-      - name: Create Buildozer Config
-        run: |
+          # We generate the config file here to ensure it is correct
           cat <<EOF > buildozer.spec
           [app]
           title = SpotifyDownloader
@@ -45,10 +22,9 @@ jobs:
           source.include_exts = py,png,jpg,kv,atlas
           version = 1.0
           
-          # Requirements
-          requirements = python3,kivy==2.2.1,kivymd,yt-dlp,ffmpeg,openssl,requests
+          # Added 'pillow' which is required for KivyMD but often missed
+          requirements = python3,kivy==2.2.1,kivymd,yt-dlp,openssl,requests,pillow
           
-          # Android Config
           orientation = portrait
           fullscreen = 0
           android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
@@ -56,8 +32,6 @@ jobs:
           android.minapi = 21
           android.archs = arm64-v8a
           android.allow_backup = True
-          
-          # Fix for "Broken Pipe" and License errors
           android.accept_sdk_license = True
           
           [buildozer]
@@ -65,12 +39,15 @@ jobs:
           warn_on_root = 1
           EOF
 
-      - name: Build APK
-        run: |
-          buildozer android debug
+      - name: Build with Docker
+        # We use the official Kivy Buildozer Docker image
+        uses: docker://kivy/buildozer:latest
+        with:
+          entrypoint: buildozer
+          args: android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: music-app-apk
+          name: my-app-apk
           path: bin/*.apk
