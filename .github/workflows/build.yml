@@ -1,19 +1,62 @@
 name: Build Android APK
-on: [push]
+on:
+  push:
+    branches: [ main, master ]
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+
     steps:
-      - uses: actions/checkout@v2
-      
-      - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action-v1@v3
-        with:
-          command: buildozer android debug
-          buildozer_version: master
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pip \
+            build-essential \
+            git \
+            python3 \
+            python3-dev \
+            ffmpeg \
+            libffi-dev \
+            libssl-dev \
+            autoconf \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo5 \
+            cmake \
+            openjdk-17-jdk \
+            zip \
+            unzip
+
+      - name: Install Buildozer & Cython
+        run: |
+          pip3 install --upgrade pip
+          pip3 install buildozer cython==0.29.33
+
+      - name: Initialize Buildozer (If missing)
+        run: |
+          if [ ! -f buildozer.spec ]; then
+            buildozer init
+            # Auto-configure the spec file for your app requirements
+            sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd,yt-dlp,ffmpeg,openssl/g' buildozer.spec
+            sed -i 's/android.permissions = INTERNET/android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE/g' buildozer.spec
+            sed -i 's/android.api = 27/android.api = 33/g' buildozer.spec
+          fi
+
+      - name: Build APK
+        run: |
+          # "yes" automatically accepts the Android SDK license agreement
+          yes | buildozer android debug
 
       - name: Upload APK
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4  # Fixed: Updated from v2 to v4
         with:
-          name: package
+          name: my-app-apk
           path: bin/*.apk
