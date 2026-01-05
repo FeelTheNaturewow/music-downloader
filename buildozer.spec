@@ -22,7 +22,8 @@ version.filename = %(source.dir)s/main.py
 # -------------------------------------------------------------------
 # CRITICAL: This tells the app which libraries to install
 # -------------------------------------------------------------------
-requirements = python3,kivy==2.2.1,kivymd,yt-dlp,openssl,requests,pillow
+# We added: mutagen (for audio tags), pycryptodomex (for encryption), certifi (for SSL), and sqlite3
+requirements = python3,kivy==2.2.1,kivymd,pillow,yt-dlp,requests,openssl,mutagen,pycryptodomex,certifi,sqlite3
 
 # (str) Supported orientation (one of landscape, portrait or all)
 orientation = portrait
