@@ -48,7 +48,7 @@ class Spotify2Mobile(MDApp):
         )
         layout.add_widget(self.input_url)
 
-        # Format Selection (Simple Toggle)
+        # Status Label
         self.status_label = MDLabel(
             text="Ready", 
             halign="center", 
@@ -60,7 +60,7 @@ class Spotify2Mobile(MDApp):
 
         # Download Button
         self.btn_download = MDRaisedButton(
-            text="DOWNLOAD MP3",
+            text="DOWNLOAD M4A",
             pos_hint={"center_x": 0.5},
             size_hint_y=None,
             height=50,
@@ -85,7 +85,7 @@ class Spotify2Mobile(MDApp):
         # Run download in background so UI doesn't freeze
         threading.Thread(target=self.run_download, args=(query,)).start()
 
-def run_download(self, query):
+    def run_download(self, query):
         try:
             if platform == 'android':
                 storage_path = "/storage/emulated/0/Download"
@@ -98,7 +98,6 @@ def run_download(self, query):
                 'outtmpl': f'{storage_path}/%(title)s.%(ext)s',
                 'quiet': True,
                 'no_warnings': True,
-                # Removed 'postprocessors' block that required ffmpeg
             }
 
             if not query.startswith('http'):
